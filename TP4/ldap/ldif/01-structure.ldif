@@ -1,0 +1,56 @@
+dn: ou=people,dc=polycorp,dc=com
+objectClass: organizationalUnit
+ou: people
+
+dn: ou=groups,dc=polycorp,dc=com
+objectClass: organizationalUnit
+ou: groups
+
+dn: ou=services,dc=polycorp,dc=com
+objectClass: organizationalUnit
+ou: services
+
+dn: uid=alice,ou=people,dc=polycorp,dc=com
+objectClass: inetOrgPerson
+uid: alice
+cn: Alice Martin
+givenName: Alice
+sn: Martin
+mail: alice.martin@polycorp.test
+userPassword: {SSHA}SrkoK5J1J9iYsvnYFESPeJdx5eZ+S0xSVFZVbw==
+
+dn: uid=bob,ou=people,dc=polycorp,dc=com
+objectClass: inetOrgPerson
+uid: bob
+cn: Bob Durand
+givenName: Bob
+sn: Durand
+mail: bob.durand@polycorp.test
+userPassword: {SSHA}SrkoK5J1J9iYsvnYFESPeJdx5eZ+S0xSVFZVbw==
+
+dn: uid=emma,ou=people,dc=polycorp,dc=com
+objectClass: inetOrgPerson
+uid: emma
+cn: Emma Petit
+givenName: Emma
+sn: Petit
+mail: emma.petit@polycorp.test
+userPassword: {SSHA}SrkoK5J1J9iYsvnYFESPeJdx5eZ+S0xSVFZVbw==
+
+dn: cn=svc-keycloak,ou=services,dc=polycorp,dc=com
+objectClass: organizationalRole
+objectClass: simpleSecurityObject
+cn: svc-keycloak
+userPassword: {SSHA}/I1T1fhhv7FynPrTOzEidmsvjiqpBX6pxhkOzw==
+
+dn: cn=rh,ou=groups,dc=polycorp,dc=com
+objectClass: groupOfNames
+cn: rh
+member: uid=alice,ou=people,dc=polycorp,dc=com
+
+dn: cn=employes,ou=groups,dc=polycorp,dc=com
+objectClass: groupOfNames
+cn: employes
+member: uid=alice,ou=people,dc=polycorp,dc=com
+member: uid=bob,ou=people,dc=polycorp,dc=com
+member: uid=emma,ou=people,dc=polycorp,dc=com

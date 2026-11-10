@@ -1,0 +1,85 @@
+# TP4 - SAML 2.0 et OAuth 2.0 : une instance Keycloak, un SP SAML, un client OAuth/OIDC, une API.
+# Ports publies sur 127.0.0.1 uniquement. Comptes et secrets : TP seulement.
+name: tp4
+
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.1
+    command: start-dev
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      # Le navigateur passe par localhost:8180, les conteneurs par keycloak:8080.
+      KC_HOSTNAME: http://localhost:8180
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HEALTH_ENABLED: "true"
+      JAVA_OPTS_KC_HEAP: -XX:MaxRAMPercentage=60
+    depends_on:
+      - ldap
+    ports:
+      - "127.0.0.1:8180:8080"
+    volumes:
+      - keycloak-data:/opt/keycloak/data
+    mem_limit: 1500m
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  ldap:
+    image: osixia/openldap:1.5.0
+    command: --copy-service
+    environment:
+      LDAP_ORGANISATION: Polycorp
+      LDAP_DOMAIN: polycorp.com
+      LDAP_ADMIN_PASSWORD: admin
+      LDAP_TLS: "false"          # lab seulement : en production, LDAPS ou StartTLS
+    volumes:
+      - ./ldap/ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom
+      - ldap-data:/var/lib/ldap
+      - ldap-config:/etc/ldap/slapd.d
+    ports:
+      - "127.0.0.1:1389:389"
+    mem_limit: 200m
+
+  sp-saml:
+    build: ./apps
+    image: tp4-apps:1.0
+    command: gunicorn -b 0.0.0.0:8000 -w 1 --threads 4 sp_saml:app
+    environment:
+      SP_BASE: http://localhost:8181
+    ports:
+      - "127.0.0.1:8181:8000"
+    mem_limit: 200m
+
+  client-oauth:
+    # Réutilise l'image construite par sp-saml (évite la course BuildKit sur le même tag).
+    image: tp4-apps:1.0
+    command: gunicorn -b 0.0.0.0:8000 -w 1 --threads 4 client_oauth:app
+    environment:
+      KC_PUBLIC: http://localhost:8180/realms/polycorp
+      KC_INTERNE: http://keycloak:8080/realms/polycorp
+      CLIENT_BASE: http://localhost:8182
+      API_INTERNE: http://api-notes:8000
+    ports:
+      - "127.0.0.1:8182:8000"
+    mem_limit: 200m
+
+  api-notes:
+    # Réutilise l'image construite par sp-saml (évite la course BuildKit sur le même tag).
+    image: tp4-apps:1.0
+    command: gunicorn -b 0.0.0.0:8000 -w 1 --threads 4 api_notes:app
+    environment:
+      KC_ISSUER: http://localhost:8180/realms/polycorp
+      KC_INTERNE: http://keycloak:8080/realms/polycorp
+      API_AUDIENCE: api-notes
+    ports:
+      - "127.0.0.1:8183:8000"
+    mem_limit: 200m
+
+volumes:
+  keycloak-data:
+  ldap-data:
+  ldap-config:
